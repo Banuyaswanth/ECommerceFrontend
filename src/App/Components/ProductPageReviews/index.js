@@ -3,6 +3,7 @@ import {TailSpin} from "react-loader-spinner";
 import {BsFillStarFill} from "react-icons/bs";
 import {AiOutlineLeft,AiOutlineRight} from "react-icons/ai"
 import ReviewCard from "../ReviewCard";
+import ReviewSectionTextArea from "../ReviewSectionTextArea";
 import "./index.css";
 
 const ProductRatingsAndReviews = () => {
@@ -13,22 +14,51 @@ const ProductRatingsAndReviews = () => {
     let [reviewFetchStatus, setReviewFetchStatus] = useState("loading");
     let [sortingOnRatingAsc, setSortingOnRatingAsc] = useState(false);
     let [rating, setRating] = useState(0);
-    let reviewText = "" ;
+    let [reviewable, setReviewable] = useState(false);
+    let [existingReviewData, setExistingReviewData] = useState({});
+    let [reviewText, setReviewText] = useState("") ;
     let stars = [1,2,3,4,5];
 
-    let noReviewImageUrl = "https://1.bp.blogspot.com/-7gAG1CS_-GY/YR7XD-axEZI/AAAAAAAAKrw/-5poKoXRiMon490omdLK8B7qH-hsc_EcQCLcBGAsYHQ/w1200-h630-p-k-no-nu/Making-Ratings-and-Reviews-better-for-users-developers-v2.png";
     let somethingWentWrongImageUrl = "https://cdn.dribbble.com/users/1078347/screenshots/2799566/oops_1x.png";
-
+    let noReviewImageUrl = "https://1.bp.blogspot.com/-7gAG1CS_-GY/YR7XD-axEZI/AAAAAAAAKrw/-5poKoXRiMon490omdLK8B7qH-hsc_EcQCLcBGAsYHQ/w1200-h630-p-k-no-nu/Making-Ratings-and-Reviews-better-for-users-developers-v2.png";
+    
     const GetReviews = async() => {
-        let reviewFetchUrl = `https://localhost:7258/api/Review/all/${productId}?sortOnRatingAsc=${sortingOnRatingAsc}&page=${reviewPage}`;
-        let response = await fetch(reviewFetchUrl);
-        if(response.ok) {
-            let responseData = await response.json();
-            setReviewSummary(responseData);
-            setReviewFetchStatus("success");
+        try{
+            let reviewFetchUrl = `https://localhost:7258/api/Review/all/${productId}?sortOnRatingAsc=${sortingOnRatingAsc}&page=${reviewPage}`;
+            let response = await fetch(reviewFetchUrl);
+            if(response.ok) {
+                let responseData = await response.json();
+                setReviewSummary(responseData);
+                setReviewFetchStatus("success");
+            }
+            else {
+                setReviewFetchStatus("failure");
+            }
         }
-        else {
+        catch(err) {
             setReviewFetchStatus("failure");
+        }
+    }
+
+    const HandleRateProduct = async() => {
+        try {
+            let isProductReviewableUrl = `https://localhost:7258/api/Review/IsProductReviewable/${customerId}/${productId}`;
+            let response = await fetch(isProductReviewableUrl);
+            if(response.ok){
+                setReviewable(true);
+                let fetchReviewUrl = `https://localhost:7258/api/Review/IsReviewPresent/${customerId}/${productId}`;
+                let reviewResponse = await fetch(fetchReviewUrl);
+                if(reviewResponse.ok) {
+                    let reviewData = await reviewResponse.json();
+                    if (reviewData.isAvailable) {
+                        setReviewText(reviewData.review.review)
+                    }
+                    setExistingReviewData(reviewData);
+                }
+            }
+        }
+        catch(err) {
+
         }
     }
 
@@ -51,10 +81,6 @@ const ProductRatingsAndReviews = () => {
             default:
                 return "";
         }
-    }
-
-    const HandleTextareaChange = (event) => {
-        reviewText = event.target.value;
     }
 
     const ChangeSortOrder = (event) => {
@@ -90,10 +116,12 @@ const ProductRatingsAndReviews = () => {
                             </span>)}
                             <span className="given-rating-text" style={{color: rating >=3 ? "green" : rating===2 ? "orange" : "red"}}>{GetToolTipText(rating)}</span>
                         </div>
+                        <hr/>
                         <h2 className="add-rating-prompt-heading">Review this product</h2>
-                        <div className="add-review-field-container">
-                            <span>Description</span>
-                            <textarea className="add-review-text-area-field"onChange={HandleTextareaChange} rows={8} placeholder="Write your review here..."/>
+                        <ReviewSectionTextArea reviewText={reviewText}/>
+                        <div className="review-section-buttons-container">
+                            <button className="review-section-cancel-btn review-section-btns">Cancel</button>
+                            <button className="review-section-btns review-section-submit-btn">Submit</button>
                         </div>
                     </div>
                     <div className="reviews-summary">
@@ -159,7 +187,7 @@ const ProductRatingsAndReviews = () => {
                         </ul>
                     </div>
                     <div className="sorting-select-container">
-                        <select value={sortingOnRatingAsc ? "negative" : "positive"} onChange={(event)=>ChangeSortOrder(event)} className="rating-sort-select-element box-shadow-class">
+                        <select value={sortingOnRatingAsc ? "negative" : "positive"} name="review-section-sort-select" id="review-section-sort-select-id" onChange={(event)=>ChangeSortOrder(event)} className="rating-sort-select-element box-shadow-class">
                             <option value="positive">Positive First</option>
                             <option value="negative">Negative First</option>
                         </select>

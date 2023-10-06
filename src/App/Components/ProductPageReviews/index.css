@@ -52,11 +52,13 @@
 }
 .add-rating-review-fields-container{
     padding: 30px;
+    margin-bottom: 15px;
 }
 .add-rating-prompt-heading{
     font-size: 24px;
     font-weight: 500;
     margin-top: 0px;
+    margin-bottom: 10px;
 }
 .rating-icons-and-text-container{
     display: flex;
@@ -99,11 +101,34 @@
 }
 .add-review-text-area-field{
     outline: none;
-    border: 1px solid gray;
+    border: 1px solid lightgray;
 }
 .add-review-text-area-field:focus {
-    outline: 1px solid blue;
+    outline: 1px solid black;
     border: none;
+}
+.review-section-buttons-container{
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+    gap: 15px;
+}
+.review-section-btns{
+    width: 120px;
+    font-size: 18px;
+    font-weight: 500;
+    height: 42px;
+    cursor: pointer;
+}
+.review-section-cancel-btn{
+    color: orangered;
+    border: 2px solid orangered;
+    background-color: transparent;
+}
+.review-section-submit-btn{
+    color: white;
+    border: none;
+    background-color: orangered;
 }
 .reviews-summary{
     display: flex;
@@ -223,6 +248,12 @@
     }
     .add-rating-prompt-heading{
         font-size: 18px;
+    }
+    .review-section-btns{
+        width: 100px;
+        font-size: 14px;
+        font-weight: 600;
+        height: 36px;
     }
     .progress-bar-outer-container{
         width: 150px;

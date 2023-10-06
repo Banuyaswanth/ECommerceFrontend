@@ -35,9 +35,21 @@
     font-size: 14px;
     border-radius: 4px;
 }
+.something-went-wrong-orders-container{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+.someting-went-wrong-orders-image {
+    width: 75%;
+}
 
 @media (max-width: 767px) {
     .page{
         padding: 5px;
+    }
+    .someting-went-wrong-orders-image{
+        width: 100%;
     }
 }
