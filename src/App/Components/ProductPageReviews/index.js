@@ -1,26 +1,36 @@
-import {useState, useEffect} from "react";
+import {useState, useEffect, useRef} from "react";
 import {TailSpin} from "react-loader-spinner";
 import {BsFillStarFill} from "react-icons/bs";
 import {AiOutlineLeft,AiOutlineRight} from "react-icons/ai"
 import ReviewCard from "../ReviewCard";
 import ReviewSectionTextArea from "../ReviewSectionTextArea";
+import Loading from "../Loading";
+import SomethingWentWrong from "../SomethingWentWrong";
 import "./index.css";
 
 const ProductRatingsAndReviews = () => {
-    let productId = "784DD15C-5C16-4BAE-A5F7-BDDAC0B82686";
+    // let productId = "784DD15C-5C16-4BAE-A5F7-BDDAC0B82686";
+    let productId = "35FADD1B-51B0-4851-A1D4-B14161C4785F";
+    // let productId = "7C43F42F-481F-4699-80EA-065522E53483";
     let customerId = "BDB52F9F-92BE-44E3-BD23-61CD36B513BF";
     const [reviewSummary, setReviewSummary] = useState({});
     let [reviewPage, setReviewPage] = useState(1);
-    let [reviewFetchStatus, setReviewFetchStatus] = useState("loading");
+    let [productReviewsFetchStatus, setproductReviewsFetchStatus] = useState("loading");
     let [sortingOnRatingAsc, setSortingOnRatingAsc] = useState(false);
     let [rating, setRating] = useState(0);
+    let [rateProductClicked, setRateProductClicked] = useState(false);
     let [reviewable, setReviewable] = useState(false);
-    let [existingReviewData, setExistingReviewData] = useState({});
+    let [reviewableFetchStatus, setreviewableFetchStatus] = useState("loading");
+    let [reviewDataFetchStatus, setReviewDataFetchStatus] = useState("loading");
+    let [rateProductError, setRateProductError] = useState("");
     let [reviewText, setReviewText] = useState("") ;
+    let [reviewId, setReviewId] = useState("");
+    let textareaRef = useRef(reviewText);
     let stars = [1,2,3,4,5];
 
-    let somethingWentWrongImageUrl = "https://cdn.dribbble.com/users/1078347/screenshots/2799566/oops_1x.png";
+    
     let noReviewImageUrl = "https://1.bp.blogspot.com/-7gAG1CS_-GY/YR7XD-axEZI/AAAAAAAAKrw/-5poKoXRiMon490omdLK8B7qH-hsc_EcQCLcBGAsYHQ/w1200-h630-p-k-no-nu/Making-Ratings-and-Reviews-better-for-users-developers-v2.png";
+    let nonReviewableProductImageUrl = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSYffyYkW6X7-Hqxkk2QjN1W2Os0F7zHyxXlQ&usqp=CAU";
     
     const GetReviews = async() => {
         try{
@@ -29,36 +39,55 @@ const ProductRatingsAndReviews = () => {
             if(response.ok) {
                 let responseData = await response.json();
                 setReviewSummary(responseData);
-                setReviewFetchStatus("success");
+                setproductReviewsFetchStatus("success");
             }
             else {
-                setReviewFetchStatus("failure");
+                setproductReviewsFetchStatus("failure");
             }
         }
         catch(err) {
-            setReviewFetchStatus("failure");
+            setproductReviewsFetchStatus("failure");
         }
     }
 
     const HandleRateProduct = async() => {
+        setRateProductClicked(true);
         try {
             let isProductReviewableUrl = `https://localhost:7258/api/Review/IsProductReviewable/${customerId}/${productId}`;
             let response = await fetch(isProductReviewableUrl);
             if(response.ok){
                 setReviewable(true);
+                setreviewableFetchStatus("success");
                 let fetchReviewUrl = `https://localhost:7258/api/Review/IsReviewPresent/${customerId}/${productId}`;
-                let reviewResponse = await fetch(fetchReviewUrl);
-                if(reviewResponse.ok) {
-                    let reviewData = await reviewResponse.json();
-                    if (reviewData.isAvailable) {
-                        setReviewText(reviewData.review.review)
+                try {
+                    let reviewResponse = await fetch(fetchReviewUrl);
+                    if(reviewResponse.ok) {
+                        setReviewDataFetchStatus("success");
+                        let reviewData = await reviewResponse.json();
+                        if (reviewData.isAvailable) {
+                            setReviewText(reviewData.review.review);
+                            setReviewId(reviewData.review.productReviewId);
+                            setRating(reviewData.review.rating);
+                        }
                     }
-                    setExistingReviewData(reviewData);
+                    else {
+                        setReviewDataFetchStatus("failure");
+                    }
                 }
+                catch(err) {
+                    setReviewDataFetchStatus("failure");
+                }
+            }
+            else if (response.status === 404) {
+                setReviewable(false);
+                setreviewableFetchStatus("success");
+            }
+            else {
+                setreviewableFetchStatus("failure");
             }
         }
         catch(err) {
-
+            setreviewableFetchStatus("failure");
         }
     }
 
@@ -83,6 +112,81 @@ const ProductRatingsAndReviews = () => {
         }
     }
 
+    const handleClose = () => {
+        setRateProductClicked(false);
+        setReviewable(false);
+        setreviewableFetchStatus("loading");
+        setReviewDataFetchStatus("loading");
+    }
+
+    const HandleSubmit = async() => {
+        console.log(textareaRef.current.value);
+        setReviewText(textareaRef.current.value);
+        if(rating === 0) {
+            setRateProductError("*Rating cannot be empty.Select a rating..!!!");
+            setTimeout(() => setRateProductError(""), 5000);
+        }
+        else if (reviewId === "") {
+            let addReviewObject = {
+                "CustomerId": customerId,
+                "ProductId": productId,
+                "Review": textareaRef.current.value,
+                "Rating": rating
+            }
+            let addReviewUrl = "https://localhost:7258/api/Review";
+            let options = {
+                method: "POST",
+                headers: {
+                    "Content-Type" : "application/json"
+                },
+                body: JSON.stringify(addReviewObject)
+            }
+            let response = await fetch(addReviewUrl, options);
+            if(response.ok) {
+                let responseData = await response.json();
+                setRating(responseData.rating);
+                setReviewText(responseData.review);
+                setReviewId(responseData.productReviewId);
+                setRateProductError("Review Added Successfully :)");
+                setTimeout(() => setRateProductError(""), 5000);
+                GetReviews();
+            }
+            else {
+                setRateProductError("Something went wrong :( unable to add review, Try again later");
+                setTimeout(() => setRateProductError(""), 5000);
+            }
+        }
+        else {
+            let editReviewObject = {
+                "ProductReviewId": reviewId,
+                "Review": textareaRef.current.value,
+                "Rating": rating
+            }
+            let editReviewUrl = "https://localhost:7258/api/Review";
+            let options = {
+                method: "PUT",
+                headers: {
+                    "Content-Type" : "application/json"
+                },
+                body: JSON.stringify(editReviewObject)
+            }
+            let response = await fetch(editReviewUrl, options);
+            if(response.ok) {
+                let responseData = await response.json();
+                setRating(responseData.rating);
+                setReviewText(responseData.review);
+                setReviewId(responseData.productReviewId);
+                setRateProductError("Review edited Successfully :)");
+                setTimeout(() => setRateProductError(""), 5000);
+                GetReviews();
+            }
+            else {
+                setRateProductError("Something went wrong :( unable to edit review, Try again later");
+                setTimeout(() => setRateProductError(""), 5000);
+            }
+        }
+    }
+
     const ChangeSortOrder = (event) => {
         setSortingOnRatingAsc(event.target.value === "negative");
     }
@@ -100,30 +204,40 @@ const ProductRatingsAndReviews = () => {
     }, [reviewPage,sortingOnRatingAsc])
 
     const GetJsx = () => {
-        if(reviewFetchStatus === "success") {
+        if(productReviewsFetchStatus === "success") {
             return (
                 <div className="reviews-section-container">
                     <div className="reviews-section-header">
                         <h1 className="reviews-section-heading">Ratings & Reviews</h1>
-                        <button className="rate-product-button box-shadow-class">Rate Product</button>
+                        {!rateProductClicked && <button className="rate-product-button box-shadow-class" onClick={HandleRateProduct}>Rate Product</button>}
                     </div>
-                    <div className="box-shadow-class add-rating-review-fields-container">
-                        <h2 className="add-rating-prompt-heading">Rate this product*</h2>
-                        <div className="rating-icons-and-text-container">
-                            {stars.map((star) => <span key={star} className="star-tooltip-container">
-                                <BsFillStarFill className="add-rating-star-icon" onClick={() => HandleStarClick(star)} color={star<=rating ? "yellow" : "lightgray"}/>
-                                <span className="rating-tooltip">{GetToolTipText(star)}</span>
-                            </span>)}
-                            <span className="given-rating-text" style={{color: rating >=3 ? "green" : rating===2 ? "orange" : "red"}}>{GetToolTipText(rating)}</span>
-                        </div>
-                        <hr/>
-                        <h2 className="add-rating-prompt-heading">Review this product</h2>
-                        <ReviewSectionTextArea reviewText={reviewText}/>
-                        <div className="review-section-buttons-container">
-                            <button className="review-section-cancel-btn review-section-btns">Cancel</button>
-                            <button className="review-section-btns review-section-submit-btn">Submit</button>
-                        </div>
-                    </div>
+                    {rateProductClicked && (reviewableFetchStatus === "success" ? 
+                        (reviewable ? (reviewDataFetchStatus === "success" ? <div className="box-shadow-class add-rating-review-fields-container">
+                            <h2 className="add-rating-prompt-heading">Rate this product*</h2>
+                            <div className="rating-icons-and-text-container">
+                                {stars.map((star) => <span key={star} className="star-tooltip-container">
+                                    <BsFillStarFill className="add-rating-star-icon" onClick={() => HandleStarClick(star)} color={star<=rating ? "yellow" : "lightgray"}/>
+                                    <span className="rating-tooltip">{GetToolTipText(star)}</span>
+                                </span>)}
+                                <span className="given-rating-text" style={{color: rating >=3 ? "green" : rating===2 ? "orange" : "red"}}>{GetToolTipText(rating)}</span>
+                            </div>
+                            <hr/>
+                            <h2 className="add-rating-prompt-heading">Review this product</h2>
+                            <ReviewSectionTextArea refProp={textareaRef} reviewText={reviewText}/>
+                            <p className="rate-product-error-msg">{rateProductError}</p>
+                            <div className="review-section-buttons-container">
+                                <button className="review-section-cancel-btn review-section-btns" onClick={handleClose}>Cancel</button>
+                                <button className="review-section-btns review-section-submit-btn" onClick={HandleSubmit}>Submit</button>
+                            </div>
+                        </div> : <SomethingWentWrong/>) : <div className="box-shadow-class product-not-reviewable-container">
+                            <img className="product-not-reviewable-image" src={nonReviewableProductImageUrl} alt="product-not-reviewable"/>
+                            <p className="product-not-reviewable-content">You have not purchased this product yet. Cannot Review the product</p>
+                            <button className="product-not-reviewable-close-btn review-section-btns" onClick={handleClose}>Close</button>
+                        </div>) : 
+                        reviewableFetchStatus === "failure" ?
+                        <SomethingWentWrong/> :
+                        <Loading/>)
+                    }
                     <div className="reviews-summary">
                         <div className="average-total-reviews-ratings-container">
                             <div>
@@ -192,6 +306,7 @@ const ProductRatingsAndReviews = () => {
                             <option value="negative">Negative First</option>
                         </select>
                     </div>
+                    <h2 style={{fontWeight: "500", marginBottom: "0px", marginTop: "10px"}}>Reviews</h2>
                     {reviewSummary.reviews.length === 0 && <div className="no-reviews-container">
                         <img className="no-reviews-image" src={noReviewImageUrl} alt="no reviews"/>
                         <h3 className="no-reviews-heading">No Reviews available for the product yet</h3>
@@ -208,17 +323,13 @@ const ProductRatingsAndReviews = () => {
                 </div>
             )
         }
-        if(reviewFetchStatus === "failure") {
+        if(productReviewsFetchStatus === "failure") {
             return (
-                <div className="something-went-wrong-container">
-                    <img className="someting-went-wrong-image" src={somethingWentWrongImageUrl} alt="something went wrong"/>
-                </div>
+                <SomethingWentWrong/>
             )
         }
         return (
-            <div className = "loading-container">
-                <TailSpin color="blue" radius={"8px"}/>
-            </div>
+            <Loading/>
         )
     }
 
