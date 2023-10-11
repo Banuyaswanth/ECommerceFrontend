@@ -1,21 +1,15 @@
-.product-not-reviewable-container{
+.loading-container{
     display: flex;
-    flex-direction: column;
+    justify-content: center;
     align-items: center;
-    padding: 15px;
 }
-.product-not-reviewable-content{
-    margin-top: 0px;
-    font-size: 15px;
-    font-weight: 500;
-    color: red;
+.something-went-wrong-container{
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
-.product-not-reviewable-close-btn{
-    margin: 8px;
-}
-.product-not-reviewable-image {
-    width: 150px;
-    height: 150px;
+.someting-went-wrong-image {
+    width: 50%;
 }
 .reviews-section-container{
     display: flex;
@@ -118,11 +112,6 @@
     justify-content: flex-end;
     margin-top: 20px;
     gap: 15px;
-}
-.rate-product-error-msg{
-    color: red;
-    font-size: 14px;
-    font-weight: 500;
 }
 .review-section-btns{
     width: 120px;
@@ -242,6 +231,9 @@
 
 
 @media (max-width: 767px) {
+    .someting-went-wrong-image{
+        width: 80%;
+    }
     .reviews-section-container{
         padding: 10px;
     }
@@ -250,9 +242,6 @@
     }
     .rate-product-button{
         width: 120px;
-    }
-    .product-not-reviewable-content{
-        text-align: center;
     }
     .add-rating-review-fields-container{
         padding: 10px;
